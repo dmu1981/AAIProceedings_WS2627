@@ -1,0 +1,120 @@
+% Shared paper metadata, repository QR code, and author appendix components.
+% Each paper's metadata.tex calls \ResetPaperMetadata before defining values.
+\newcommand{\ResetPaperMetadata}{%
+  \gdef\AAIPaperTitle{}%
+  \gdef\AAIPaperInstitution{}%
+  \gdef\AAIPaperEmail{}%
+  \gdef\AAIPaperAbstract{}%
+  \gdef\AAIPaperKeywords{}%
+  \gdef\AAIProjectRepository{}%
+  \gdef\AAIAuthorNames{}%
+  \gdef\AAIAuthorProfiles{}%
+}
+\ResetPaperMetadata
+\newcommand{\PaperTitle}[1]{\gdef\AAIPaperTitle{#1}}
+\newcommand{\PaperInstitution}[1]{\gdef\AAIPaperInstitution{#1}}
+\newcommand{\PaperEmail}[1]{\gdef\AAIPaperEmail{#1}}
+\newcommand{\PaperAbstract}[1]{\gdef\AAIPaperAbstract{#1}}
+\newcommand{\PaperKeywords}[1]{\gdef\AAIPaperKeywords{#1}}
+\newcommand{\ProjectRepository}[1]{%
+  \ifstrempty{#1}{%
+    \PackageError{aai-proceedings}{No project repository URL defined}{Please specify the GitHub repository for this paper.}%
+  }{%
+    \IfBeginWith{#1}{https://github.com/}{%
+      \gdef\AAIProjectRepository{#1}%
+    }{%
+      \PackageError{aai-proceedings}{Project repository must start with https://github.com/}{Use a GitHub repository URL in metadata.tex.}%
+    }%
+  }%
+}
+
+% Seven arguments: name, programme, 50--80 word biography, photo filename,
+% personal GitHub, LinkedIn, website. Leave any optional field empty.
+\newcommand{\AddAuthor}[7]{%
+  \ifdefempty{\AAIAuthorNames}{%
+    \gdef\AAIAuthorNames{#1}%
+  }{%
+    \gappto\AAIAuthorNames{ and #1}%
+  }%
+  \gappto\AAIAuthorProfiles{\AuthorProfile{#1}{#2}{#3}{#4}{#5}{#6}{#7}}%
+}
+
+\newcommand{\PaperHeading}{%
+  \ifdefempty{\AAIPaperTitle}{\PackageError{aai-proceedings}{Missing paper title}{Set \string\PaperTitle in metadata.tex.}}{}%
+  \ifdefempty{\AAIAuthorNames}{\PackageError{aai-proceedings}{Missing paper authors}{Add at least one \string\AddAuthor in metadata.tex.}}{}%
+  \ifdefempty{\AAIProjectRepository}{\PackageError{aai-proceedings}{No project repository URL defined}{Please specify the GitHub repository for this paper.}}{}%
+  \stepcounter{paper}%
+  \setcounter{section}{0}%
+  \setcounter{figure}{0}%
+  \setcounter{table}{0}%
+  \setcounter{equation}{0}%
+  \twocolumn[{%
+    \begin{center}
+      {\LARGE\bfseries\color{AAIblue}\AAIPaperTitle\par}\vspace{5pt}
+      {\normalsize \AAIAuthorNames\par}\vspace{2pt}
+      {\small \AAIPaperInstitution\par}
+      \ifdefempty{\AAIPaperEmail}{}{\small\href{mailto:\AAIPaperEmail}{\AAIPaperEmail}\par}
+    \end{center}
+    \vspace{4pt}
+    \noindent\begin{minipage}[t]{0.79\textwidth}\small\vspace{0pt}
+      \textbf{Abstract.} \AAIPaperAbstract\par\vspace{4pt}
+      \textbf{Keywords:} \AAIPaperKeywords\par\vspace{3pt}
+      {\footnotesize\color{AAIblue}\expandafter\url\expandafter{\AAIProjectRepository}}%
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.15\textwidth}\vspace{0pt}\centering
+      \qrcode[height=1.7cm]{\AAIProjectRepository}\par\vspace{2pt}
+      {\scriptsize Project repository}
+    \end{minipage}\vspace{13pt}
+  }]%
+  \phantomsection
+  \addcontentsline{toc}{paper}{\AAIPaperTitle}%
+}
+
+% A photo is optional. A neutral square keeps all profiles aligned when absent.
+\newcommand{\AAIPhotoPlaceholder}{%
+  \fcolorbox{black!20}{black!4}{%
+    \parbox[c][24mm][c]{24mm}{\centering\color{black!45}\scriptsize Portrait}%
+  }%
+}
+\newcommand{\AuthorProfile}[7]{%
+  \par\noindent\begin{minipage}{\textwidth}
+    \begin{minipage}[t]{0.17\textwidth}\vspace{0pt}
+      \ifstrempty{#4}{%
+        \AAIPhotoPlaceholder
+      }{%
+        \IfFileExists{\AAIPaperAssetPath#4}{%
+          \includegraphics[width=25mm,height=25mm,keepaspectratio]{\AAIPaperAssetPath#4}%
+        }{%
+          \PackageWarning{aai-proceedings}{Author portrait not found; using placeholder}%
+          \AAIPhotoPlaceholder
+        }%
+      }%
+    \end{minipage}\hfill
+    \begin{minipage}[t]{0.80\textwidth}\vspace{0pt}
+      {\large\bfseries\color{AAIblue}#1\par}\vspace{1pt}
+      {\small #2\quad\textbar\quad Project: \AAIPaperTitle\par}\vspace{3pt}
+      {\small #3\par}
+      \ifstrempty{#5#6#7}{}{%
+        \vspace{3pt}{\footnotesize\color{AAIblue}%
+          \ifstrempty{#5}{}{\href{#5}{GitHub}\quad}%
+          \ifstrempty{#6}{}{\href{#6}{LinkedIn}\quad}%
+          \ifstrempty{#7}{}{\href{#7}{Website}}%
+        }%
+      }%
+    \end{minipage}
+  \end{minipage}\par\vspace{5mm}
+}
+
+% papers.tex is the single ordering list for papers and author profiles.
+\newcommand{\AAIPaperAppendixEntries}{}
+\newcommand{\IncludePaper}[1]{%
+  \subfile{../papers/#1/paper}%
+  \gappto\AAIPaperAppendixEntries{\PrintPaperAuthors{#1}}%
+}
+\newcommand{\PrintPaperAuthors}[1]{%
+  \def\AAIPaperAssetPath{../papers/#1/}%
+  \input{../papers/#1/metadata.tex}%
+  \AAIAuthorProfiles
+}
+\newcommand{\PrintAuthorAppendix}{\AAIPaperAppendixEntries}
+

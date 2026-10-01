@@ -8,15 +8,23 @@ repo_dir="$(cd -- "$script_dir/.." && pwd)"
 cd "$repo_dir"
 
 declare -A changed=()
+shared_touched=()
 all_papers=false
 build_proceedings=false
 while IFS= read -r -d '' file; do
   case "$file" in
+    papers/*/metadata.tex|papers/*/authors/*)
+      paper_name="${file#papers/}"; changed["${paper_name%%/*}"]=1; build_proceedings=true ;;
     papers/*/*) paper_name="${file#papers/}"; changed["${paper_name%%/*}"]=1 ;;
-    proceedings/*|config/*) all_papers=true; build_proceedings=true ;;
-    scripts/*|template/*) all_papers=true ;;
+    proceedings/*|config/*) all_papers=true; build_proceedings=true; shared_touched+=("$file") ;;
+    scripts/*|template/*|.github/*) all_papers=true; shared_touched+=("$file") ;;
   esac
 done < <(git diff --name-only -z "$base" "$head")
+
+if (( ${#shared_touched[@]} > 0 )); then
+  echo "WARNING: This change modifies shared files (${shared_touched[*]}). Students should only change their own papers/<team-name>/ folder." >&2
+  [[ "${GITHUB_ACTIONS:-}" == true ]] && echo "::warning title=Shared files changed::Only the editorial team should change proceedings/, config/, scripts/, template/ or .github/. Students: please revert these changes."
+fi
 
 if [[ "$all_papers" == true ]]; then
   for dir in papers/*; do

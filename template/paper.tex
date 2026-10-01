@@ -1,61 +1,89 @@
 \documentclass[../../proceedings/main.tex]{subfiles}
 \begin{document}
-% Keep this file focused on your research. Layout is controlled in proceedings/main.tex.
-% The first two arguments (title, authors) are required; email may be empty.
+% Bearbeite den Inhalt hier; alle Metadaten stehen in metadata.tex.
+% Das Layout ist zentral in proceedings/ definiert.
+% Orientierung fuer insgesamt hoechstens 4 Seiten, inklusive References:
+% Abstract 5--8 Zeilen; Introduction 0.5 S.; State of the Art 0.5 S.;
+% Method 1--1.25 S.; Results & Evaluation 0.75--1 S.;
+% Discussion & Limitations 0.5 S.; Conclusion 0.25 S.
+% Dies sind Richtwerte, keine erzwungenen Seitenumbrueche.
 \begin{refsection}[\subfix{references.bib}]
+\input{\subfix{metadata.tex}}
+% Titel, Autoren, Abstract, Keywords und Projekt-URL kommen aus metadata.tex.
 \PaperHeading
-  {Your paper title}
-  {First Author and Second Author}
-  {Your degree programme, Hochschule D\"usseldorf}
-  {first.author@example.edu}
-  {In about 100--150 words, state the problem, method, main result, and one limitation.}
-  {artificial intelligence, project, evaluation}
 
-\section{Introduction and Motivation}
-What problem does your project address, and why does it matter? Give context
-and cite prior work, for example \autocite{vaswani2017attention}.
+\section{Introduction \& Motivation}
+% Ca. 0.5 Seite: Welches konkrete Problem bearbeitet ihr, warum ist es relevant,
+% wer profitiert, und was ist euer Ziel bzw. eigener Beitrag? Kommt schnell zum
+% eigentlichen Problem statt mit einer allgemeinen KI-Einfuehrung zu beginnen.
+State the project question and the expected benefit for a specific audience.
+End with a precise description of your own contribution.
 
-\section{Approach}
-Describe the data, model, pipeline, and evaluation so another team could
-reproduce the main idea. Figure~\ref{fig:pipeline} shows a simple workflow.
+\section{State of the Art}
+% Ca. 0.5 Seite: Ordnet nur fuer euer Problem relevante Arbeiten, Systeme und
+% Alternativen ein. Vergleicht Vor- und Nachteile und zeigt die Luecke auf,
+% die eure Methode adressiert. Keine allgemeine Geschichte der KI.
+Compare a relevant prior approach with an alternative and explain why neither
+fully solves your problem. Cite the actual source, for example
+\autocite{vaswani2017attention}; replace this illustrative citation if it does
+not fit your project.
+
+\section{Method}
+% Ca. 1--1.25 Seiten: Beschreibt Architektur, Daten, Modelle, Algorithmen,
+% Verarbeitung und Implementierung so, dass der Ansatz nachvollziehbar ist.
+% Begruendet Entscheidungen: Warum dieses Modell/diese Datenquelle/dieser
+% Ablauf? Welche Alternative und welche Trade-offs gab es? Keine Tool-Liste.
+Describe the data flow shown in Figure~\ref{fig:team-workflow} and explain
+why each step is needed. Replace the placeholder with your own local figure.
 \begin{figure}[t]
   \centering
-  % Replace this placeholder with \includegraphics[width=\columnwidth]{\subfix{figures/my-figure.pdf}}
-  \fbox{\parbox{0.8\columnwidth}{\centering Data $\rightarrow$ Model $\rightarrow$ Evaluation}}
-  \caption{Example workflow. Put image files in this paper's figures/ directory.}
-  \label{fig:pipeline}
+  % Fuer eine echte Grafik: \includegraphics[width=\columnwidth]{\subfix{figures/my-figure.pdf}}
+  \fbox{\parbox{0.8\columnwidth}{\centering Input $\rightarrow$ Model $\rightarrow$ Output}}
+  \caption{Illustrative processing pipeline; replace with your system.}
+  \label{fig:team-workflow}
 \end{figure}
+Explain how inputs become outputs and where key design choices apply.
 
-\section{Design Decisions and Alternatives}
-Explain the choices you made, the alternatives you considered, and the tradeoffs.
-For example, Equation~\ref{eq:accuracy} defines an evaluation metric.
+\section{Results \& Evaluation}
+% Ca. 0.75--1 Seite: Zeigt, was tatsaechlich erreicht wurde und auf welcher
+% Grundlage ihr die Qualitaet beurteilt (Testdaten, Baseline, Metrik, Setting).
+% Nutzt messbare Werte oder systematische qualitative Befunde; "worked well"
+% ist keine Evidenz. Kennzeichnet illustrative Zahlen und echte Messungen klar.
+Define your metric before reporting it. Equation~\ref{eq:team-precision}
+illustrates precision; choose a metric that fits your own task.
 \begin{equation}
-  \mathrm{accuracy}=\frac{\text{correct predictions}}{\text{all predictions}}.
-  \label{eq:accuracy}
+  \mathrm{precision}=\frac{\text{relevant retrieved items}}{\text{retrieved items}}.
+  \label{eq:team-precision}
 \end{equation}
-
-\section{Results}
-Report concrete observations, including units and the evaluation setting.
-Table~\ref{tab:results} demonstrates a compact comparison.
+Table~\ref{tab:team-results} shows how to compare a baseline with your method.
+Replace the illustrative values with evidence from your evaluation.
 \begin{table}[t]
   \centering
-  \caption{Illustrative results; replace with measured values.}
-  \label{tab:results}
-  \begin{tabular}{lrr}\toprule
-    Method & Accuracy & Runtime (s) \\ \midrule
-    Baseline & 0.70 & 12 \\
-    Proposed & 0.78 & 18 \\ \bottomrule
+  \caption{Illustrative comparison; replace with measured results.}
+  \label{tab:team-results}
+  \begin{tabular}{lc}\toprule
+    Method & Precision \\ \midrule
+    Baseline & 0.60 \\
+    Proposed & 0.75 \\ \bottomrule
   \end{tabular}
 \end{table}
 
-\section{Discussion and Limitations}
-Interpret the results and name validity threats, failure cases, and ethical
-or privacy constraints relevant to the project.
+\section{Discussion \& Limitations}
+% Ca. 0.5 Seite: Interpretiert Erfolge und Fehler kritisch. Unter welchen
+% Bedingungen versagt der Ansatz? Welche Daten-, Bias-, Fairness-, Datenschutz-
+% oder Sicherheitsprobleme bestehen? Wie weit lassen sich Ergebnisse uebertragen?
+% Nennt konkrete Verbesserungen statt nur pauschal "more research is needed".
+Discuss at least one failure case and one threat to the validity of your
+evaluation. Explain the practical consequences of those limits.
 
 \section{Conclusion}
-Summarize the contribution and one realistic next step.
+% Ca. 0.25 Seite: Fasst Problem, Umsetzung, wichtigste Erkenntnis und einen
+% sinnvollen naechsten Schritt sehr kurz zusammen. Keine neuen Ergebnisse.
+Summarize the contribution and its main evidence in a few sentences, then name
+one realistic next step.
 
+% References zaehlen zum Vier-Seiten-Limit. Jeder zitierte Eintrag gehoert in
+% die eigene references.bib; verwendet eindeutige Label-Praefixe pro Team.
 \printbibliography[heading=subbibliography,title={References}]
 \end{refsection}
 \end{document}
-

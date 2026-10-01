@@ -3,8 +3,12 @@ name: Validate changed papers
 on:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   validate:
+    name: validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,10 +17,17 @@ jobs:
       - name: Install TeX and PDF tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends latexmk biber poppler-utils texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended texlive-bibtex-extra
+          sudo apt-get install -y --no-install-recommends latexmk biber poppler-utils texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-fonts-recommended texlive-bibtex-extra
       - name: Build affected papers and enforce four-page limit
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.sha }}
         run: bash scripts/validate-changed.sh "$BASE_SHA" "$HEAD_SHA"
+      - name: Upload compiled paper PDF(s) for review
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-pdf
+          path: papers/*/paper.pdf
+          if-no-files-found: ignore
 

@@ -8,7 +8,10 @@ for command_name in latexmk biber; do
 done
 mkdir -p .build
 rm -f proceedings.pdf
-latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=.build main.tex
+if ! latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=.build main.tex; then
+  "$script_dir/../scripts/report-errors.sh" .build/main.log .build/main.blg
+  exit 1
+fi
 "$script_dir/../scripts/check-log.sh" .build/main.log .build/main.blg
 cp .build/main.pdf proceedings.pdf
 printf 'Proceedings PDF: %s\n' "$script_dir/proceedings.pdf"

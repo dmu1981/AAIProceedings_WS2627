@@ -1,114 +1,323 @@
 \documentclass[../../proceedings/main.tex]{subfiles}
 \begin{document}
+\input{\subfix{metadata.tex}}
 \begin{refsection}[\subfix{references.bib}]
 \PaperHeading
-  {Cross-Platform AI Trend Radar}
-  {Alex Rivera and Samira Becker}
-  {Faculty of Media, Hochschule D\"usseldorf}
-  {trend-radar@example.edu}
-  {AI research and product signals appear across papers, code repositories, and public discussion. We present a small cross-platform trend radar that collects these signals, normalizes topic labels, and ranks changes over time. A transparent score combines relative activity, recent growth, and source diversity. In an illustrative evaluation on a hand-labelled sample, the combined ranking surfaces more relevant emerging topics than a volume-only baseline. The prototype demonstrates a reproducible workflow and makes each score traceable to source counts. Its main limitations are small sample size, platform bias, and the instability of short observation windows.}
-  {trend detection, information retrieval, AI monitoring, evaluation}
 
-\section{Introduction and Motivation}
-New AI topics often emerge in several places at once: research papers describe
-methods, code repositories expose implementations, and community discussions
-reveal practical interest. A list sorted by raw mentions tends to reward already
-popular topics. Our project asks whether a small, explainable score can identify
-recent changes while retaining the origin of each signal. The pipeline is
-inspired by established work on attention mechanisms \autocite{vaswani2017attention}
-and information retrieval evaluation \autocite{manning2008ir}.
+\section{Introduction \& Motivation}
+An editor choosing next week's technology coverage may see a discussion thread
+about ``small local models,'' a search query for ``on-device AI,'' and a news
+headline about edge inference. Each source exposes a different slice of
+interest. A single-platform trending list misses this connection, whereas a
+count of every mention tends to favor established, high-volume topics. The
+practical question is whether several weak signals can be combined into a
+short, explainable list of emerging themes.
 
-\section{Approach}
-The prototype ingests weekly counts from three source categories: preprints,
-public repositories, and discussion posts. For this example, the counts are a
-small synthetic dataset; no live API or personal data is needed for the build.
-Topic aliases are mapped to one canonical label, then each platform's counts
-are normalized by its weekly total. Figure~\ref{fig:radar} shows the stages.
+The intended users are journalists, content teams, and product researchers
+who need candidates for human investigation, not an automatic forecast. A
+useful radar should answer three questions for each candidate: what changed,
+where it changed, and which examples support the label. It should also avoid
+treating ten nearly identical posts as ten independent confirmations. The
+project therefore separates collection, semantic grouping, scoring, and
+presentation. Its contribution is a transparent design for combining these
+steps and a small worked evaluation that shows how to inspect both successes
+and failures.
+
+This paper describes a teaching prototype. It uses a hand-constructed,
+synthetic four-week scenario rather than live platform data, so the reported
+numbers demonstrate an evaluation procedure rather than a measured market
+trend. That boundary is important: a plausible pipeline can be tested for
+internal consistency with a toy sample, but evidence of real-world utility
+would require a larger, time-separated corpus and independent reviewers.
+
+\section{State of the Art}
+Simple popularity lists rank a post or query by its current count. They are
+fast and easy to audit, but each platform has its own audience and units;
+raw counts from a discussion forum and a search index are not directly
+comparable. Keyword matching is similarly transparent, yet it splits
+paraphrases such as ``small local model'' and ``on-device LLM.'' A manually
+maintained alias list can repair known pairs, but it becomes brittle as new
+phrases appear. These approaches remain valuable baselines because their
+failure modes are visible.
+
+Probabilistic topic models such as latent Dirichlet allocation represent
+documents as mixtures of word-based topics \autocite{blei2003lda}. They can
+summarize a corpus, but short posts and headlines provide little word evidence
+per item, and a topic distribution does not by itself explain whether
+cross-source attention is increasing. Sentence embeddings offer a more direct
+way to compare short, differently worded texts. Sentence-BERT was developed
+for efficient semantic similarity using fixed-size vectors
+\autocite{reimers2019sbert}, building on transformer representations
+\autocite{vaswani2017attention}. Embeddings can also merge texts that are
+related but should remain distinct, so cluster membership needs inspection.
+
+We choose embedding-based grouping for short phrases, retain source-level
+counts for an auditable rank, and treat a generated description as a draft
+only. This is a narrower task than predicting future demand. It asks whether
+cross-platform evidence can produce better review candidates than a
+single-count baseline within a fixed observation window.
+
+\section{Method}
+\textbf{Inputs and collection.} The illustrative scenario contains four
+weekly snapshots from three streams: discussion titles, search-interest
+terms, and news headlines. The discussion stream resembles a public forum
+such as Reddit; the search stream resembles a Google Trends export. No API
+calls, scraped pages, or personal records are needed to build this paper.
+Each record contains a week, source, text or query phrase, and an aggregate
+activity value. The prototype would store source identifiers and permitted
+links for review, but the worked example uses only synthetic aggregates.
+Discussion reposts with identical normalized titles count once within a week.
+Weekly snapshots use one agreed time zone and close at the same hour.
+Otherwise a Sunday post could be counted in different weeks by different
+collectors and create artificial growth. Missing source exports are recorded
+as missing, not silently interpreted as zero interest. A live collector would
+also log failed requests, record counts before and after deduplication, and
+the time of each source's last successful update. Those fields make a sudden
+increase easier to distinguish from a repaired data feed. We prefer an
+explicit batch job to a continuous stream: weekly ranking is sufficient for
+an editorial meeting and lets reviewers freeze each week's inputs.
+If an entire source export fails, that week is withheld from ranking; the
+zero used later in the activity mean denotes an available source with no
+matching items for a particular topic.
+
+\textbf{Normalization and grouping.} We lowercase text, remove URLs and
+tracking strings, keep meaningful technical tokens such as ``RAG,'' and map
+obvious spelling variants to one form. Search phrases, titles, and headlines
+are embedded with a frozen Sentence-BERT encoder: its sentence vectors let us
+compare short paraphrases without training on the toy records. Cosine similarity is
+compared with a fixed threshold of 0.78; an item joins the nearest existing
+cluster above the threshold or starts a new cluster. This threshold is an
+illustrative design choice, not a tuned optimum. A nearest-centroid rule is
+simple enough to inspect, while a fully trained topic model would be hard to
+justify with only a few weeks of data. Figure~\ref{fig:radar} summarizes the
+data flow. The cluster's displayed name is selected from its most frequent
+short phrase, then checked by a reviewer.
+The nearest-centroid rule can assign a new weekly item without recomputing
+all earlier groups. It also introduces an order effect: a vague phrase may
+shift a centroid and attract unrelated later phrases. To limit this, the
+prototype compares each candidate with both the centroid and a representative
+member and flags disagreement for review. A production version should
+compare this rule with density-based clustering on a held-out set of
+human-grouped phrases. We do not fine-tune the encoder on the toy records;
+that would make the evaluation circular. The chosen sentence encoder is a
+general starting point, not a claim that one model is optimal for every
+language or technical vocabulary.
 \begin{figure}[t]
   \centering
   \includegraphics[width=\columnwidth]{\subfix{figures/radar.pdf}}
-  \caption{The trend radar combines normalized signals from three platforms.}
+  \caption{Cross-platform pipeline. Generated summaries are review aids, not ranking inputs.}
   \label{fig:radar}
 \end{figure}
 
-For topic $t$, let $g_t$ be normalized week-over-week growth, $a_t$ current
-relative activity, and $d_t$ the fraction of source categories with activity.
-The illustrative score in Equation~\ref{eq:score} is a weighted average:
+\textbf{Comparable signals.} For each source and week, we scale the observed
+activity of a cluster to $[0,1]$ relative to that source's weekly maximum.
+This permits a search index and an aggregate post count to contribute without
+pretending they share a unit. Let $a_t$ be the mean of the three scaled values
+for topic $t$ in the current week, including zero for absent sources. Let
+$g_t=\min(1,\max(0,(a_t-a'_t)/(a'_t+0.1)))$, where $a'_t$ is the previous
+week's activity. The constant 0.1 prevents a near-zero denominator from
+producing an extreme growth value. Let $d_t$ be the fraction of sources with
+nonzero activity. The ranking score is
 \begin{equation}
-  S_t = 0.45g_t + 0.35a_t + 0.20d_t.
-  \label{eq:score}
+  S_t=0.45g_t+0.35a_t+0.20d_t.
+  \label{eq:radar-score}
 \end{equation}
-Each term is scaled to $[0,1]$ before aggregation. We retain component values
-alongside the final rank to make changes inspectable.
+The weights in Equation~\ref{eq:radar-score} favor change while retaining
+current activity and corroboration. They were set before the illustrative
+comparison; fitting them to ten labels would invite overfitting. For example,
+$g_t=0.8$, $a_t=0.6$, and two active sources give $S_t\approx0.70$. The
+dashboard shows all three terms beside the final score so a reviewer can
+identify why a candidate moved upward.
+The terms express distinct design goals. Activity prevents a one-off mention
+from topping the list solely through a growth ratio. Growth lets a new topic
+compete with a familiar but stable one. Diversity rewards a theme seen in
+more than one kind of source. The weights are an editorial policy that users
+should be able to challenge. A ranker trained on historical click-through
+could optimize engagement instead, but it might learn prior coverage patterns
+and hide why a theme was promoted. For this prototype, a visible weighted
+score is easier to justify than an opaque learned ranker.
 
-\section{Design Decisions and Alternatives}
-The three weights favor emerging activity while keeping a penalty for a topic
-seen on only one platform. An unweighted sum was simpler but made persistent,
-high-volume topics dominate. A learned ranker might adapt weights, yet our
-sample is too small for a credible training and test split. We therefore use
-fixed weights and report them explicitly. Deduplication uses canonical topic
-labels rather than embeddings, avoiding opaque merges at this stage.
+Normalizing by each source's weekly maximum is simple, but an exceptionally
+popular item compresses the scaled values of every other item that week. A
+percentile transform would resist spikes, although it would be harder to
+explain to an editor reading one topic's record. The dashboard retains raw
+aggregates and the weekly scaling maximum. Reviewers can see whether a score
+changed because the topic grew or because another topic dominated its source.
+This trace is as important as the final rank.
 
-\section{Results}
-We manually marked ten candidate topics as relevant or irrelevant to the
-exercise. Table~\ref{tab:comparison} reports precision among the top five
-ranked topics. The combined score placed four relevant topics in the top five;
-the volume-only baseline placed three. These are illustrative observations,
-not a general claim about AI trend forecasting.
+\textbf{Presentation.} A short language-model prompt can turn the top three
+representative snippets into a draft cluster description. The prompt asks for
+a neutral summary with source links and forbids claims about future growth.
+The score never uses generated text, and a reviewer must check each sentence
+against its linked snippets before publication. This separates ranking from
+wording: an incorrect summary cannot silently change the order of topics.
+The interface also displays the four-week activity trace, source breakdown,
+and cluster members so a generic label can be challenged.
+For a summary draft, the prompt receives a fixed set of representative
+snippets, their source names, and dates. It cannot browse or fill gaps with
+unstated background knowledge. A statement without support in a supplied
+snippet should be removed. The draft also states when a cluster has only one
+source, avoiding language such as ``widely discussed'' for a single-feed
+spike. A reviewer can relabel or split a cluster before publication; the
+revised score is calculated from the new membership rather than edited by
+hand.
+
+\section{Results \& Evaluation}
+We use a small worked exercise to demonstrate how the radar should be
+evaluated. Ten synthetic candidate clusters were created with four weekly
+aggregate snapshots and short example texts. One author assigned a binary
+``useful review candidate'' label after reading the texts, before comparing
+the ranking outputs. Five candidates were labeled relevant. The baseline
+orders candidates by current total activity alone. A second comparison adds
+growth but uses exact phrase groups; the full radar uses semantic clusters
+and all three score terms. Precision at five, the fraction of the first five
+candidates labeled relevant, is suitable for a reviewer who can inspect only
+a short list \autocite{manning2008ir}.
+The ten candidates include five positive and five negative labels. The
+``useful review candidate'' label is based on specificity of the theme and
+plausible recent change in its short texts, not on the radar score itself.
+Source values and labels were fixed before generating the ranking lists.
+This avoids changing the answer key after seeing which method wins, although
+a sample designed by the authors can still favor their hypothesis. All
+comparisons use the same candidates and weekly window; only grouping and
+ordering differ.
+
 \begin{table}[t]
   \centering
-  \caption{Illustrative ranking on ten hand-labelled topics.}
-  \label{tab:comparison}
+  \caption{Illustrative ten-topic exercise; not a live-data benchmark.}
+  \label{tab:radar-results}
   \begin{tabular}{lcc}\toprule
-    Ranking method & Relevant & Precision@5 \\ \midrule
-    Volume-only baseline & 3 & 0.60 \\
-    Combined score & 4 & 0.80 \\ \bottomrule
+    Ranking & Relevant in top 5 & P@5 \\ \midrule
+    Current volume & 3 & 0.60 \\
+    Growth, exact phrases & 3 & 0.60 \\
+    Full radar & 4 & 0.80 \\ \bottomrule
   \end{tabular}
 \end{table}
-The small difference suggests that growth and source diversity are useful
-features in this toy setting. A real deployment would require a larger,
-time-separated evaluation.
+Table~\ref{tab:radar-results} gives the resulting top-five counts. The full
+radar moves one additional relevant candidate into the review set, a
+difference of one item rather than proof of superior forecasting. The growth
+baseline does not improve on volume in this sample because two new phrases
+for the same theme remain separate. Semantic grouping puts them in one
+cluster and exposes activity on two streams. The exact phrase method is
+therefore a useful ablation: it tests the contribution of grouping separately
+from the weighting of signals.
+Because there are five relevant candidates, the full radar's four true
+positives in its top five imply one false positive and one missed relevant
+candidate. The volume baseline has three true positives, two false positives,
+and two misses. The difference saves one of five review slots in this
+constructed case. No significance test would be meaningful on ten examples,
+and the ranking of the remaining five candidates matters if a reviewer has
+more time. We use a top-five cutoff because it models a specific workflow,
+not because that cutoff is universally best.
 
-We also inspected the score components rather than only the final order. One
-candidate had high activity on repositories but almost no preprint or
-discussion signal. Its diversity term was low, so it ranked below a topic
-with moderate activity across all three sources. This behavior is intentional:
-the radar seeks broad change, not the busiest individual platform. Another
-candidate had a large growth ratio because its earlier count was close to
-zero. We capped the normalized growth term at one, preventing a single small
-denominator from overwhelming the ranking. These inspection cases help check
-whether the score behaves as specified, but they do not establish predictive
-validity.
+A worked score illustrates what the dashboard explains. The ``on-device
+models'' cluster has scaled current activity $a_t=0.60$, growth $g_t=0.80$,
+and activity on two of three sources, yielding $S_t\approx0.70$. The
+discussion snippets say ``small local model,'' while the search phrase says
+``on-device LLM.'' A volume-only list treats those separately and ranks a
+long-established high-count topic above them. The example supports the
+mechanism of the proposed score; it does not show that the cluster will
+remain important next month.
 
-The hand labels were created after the candidate set was assembled. That
-procedure can favor topics that are easy to recognize in retrospect. A stronger
-study would select evaluation weeks in advance, hide future counts from the
-annotators, and compute precision at several cutoffs. It would also record
-inter-annotator agreement and compare against a recent-growth baseline. We
-report only Precision@5 here because the ten-topic exercise is too small for
-stable conclusions about recall or long-term forecasting.
+We also inspect a failure case. Two headlines containing ``AI agent'' refer
+to different applications, yet their embeddings fall above the chosen
+similarity threshold. The merged cluster receives an inflated activity value
+and a misleading generated label. Looking at its member snippets reveals
+the error immediately. A review action that splits the cluster and recomputes
+the score is preferable to publishing an unqualified rank. This case shows
+why qualitative error analysis belongs beside a headline metric.
+The split action has a visible consequence. Removing the unrelated headline
+lowers that cluster's activity and may reduce its diversity term if the
+headline was its only news item. A robust interface should show the score
+before and after review, not merely hide the record. The reverse error is
+also possible: ``edge inference'' and ``on-device AI'' may fall below the
+threshold and appear as separate candidates, wasting two review slots.
+Near-neighbor suggestions to an editor are a modest way to catch both errors
+without pretending that one threshold is universally correct.
 
-\section{Discussion and Limitations}
-Platform coverage determines what the radar can see. Missing APIs, changing
-moderation practices, and language imbalance can shift counts independently of
-actual research interest. Weekly growth is especially noisy for rare topics.
-Human review is therefore needed before using a rank as evidence of a durable
-trend. Source counts should be aggregated and published without user-level data.
-The evaluation here measures ranking relevance, not downstream decision quality.
-The normalization also discards absolute scale: a small platform with a sharp
-relative increase can influence the score as much as a larger platform. This
-may be desirable for early detection, but it can amplify noise. In practice,
-we would expose both normalized and raw counts, apply a minimum-count
-threshold, and let a reviewer inspect source links before acting on a rank.
-Those checks would preserve the project's emphasis on traceability.
+Two sensitivity checks clarify what the toy comparison does and does not
+support. Lowering the similarity threshold would merge more phrases, which
+may recover paraphrases but also increase the ``AI agent'' error. Raising it
+would reduce false merges while making the on-device theme less visible. We
+therefore should not select the threshold solely because it maximizes
+Precision@5 on this tiny sample. Removing the diversity weight would allow a
+single-source spike to rise more easily. These directional checks follow
+from the method; they are not additional measured gains. A real ablation
+would tune thresholds and weights on development weeks and report one
+untouched test period.
+
+The score calculation itself needs tests. For the worked on-device candidate,
+$0.45(0.80)+0.35(0.60)+0.20(2/3)$ is approximately $0.70$, matching the
+dashboard value. A zero-activity candidate must receive zero for activity
+and diversity, and a topic with unchanged activity must receive zero growth.
+These boundary checks prevent presentation errors from being mistaken for
+modeling effects. When an entire source is unavailable, the interface marks
+the week incomplete instead of quietly computing a three-source score from
+two feeds. Small checks like these make an explainable ranker inspectable.
+
+The exercise deliberately omits latency and cost figures because no deployed
+collector or model service was measured. A real evaluation would report
+collection coverage, duplicate rate, clustering agreement with independent
+labels, ranking precision on future weeks, and processing time on specified
+hardware. Reporting numbers without that setting would make the example look
+more certain than its evidence allows.
+Generated descriptions need a separate evaluation from ranking. Independent
+reviewers could check whether every claim is supported by linked snippets,
+whether the time window is correct, and whether contradictory evidence is
+mentioned. A fluent summary is not necessarily faithful. We report no
+summary accuracy score because a few hand-written snippets cannot support a
+general estimate. The qualitative failure above demonstrates the required
+inspection step, not a model error rate.
+
+\section{Discussion \& Limitations}
+The apparent gain in Table~\ref{tab:radar-results} is one label among ten
+synthetic candidates. It is sensitive to the author who supplied both the
+cases and the labels; the relevance criterion may also favor cross-source
+signals by construction. Independent annotation, a preselected test period,
+and confidence intervals across weeks are necessary before claiming an
+operational advantage. The fixed similarity threshold can merge distinct
+topics or split paraphrases, particularly when posts are short or multilingual.
+Manual review remains part of the method rather than an afterthought.
+There is also ambiguity in ``trend.'' The score detects a recent change in
+observed attention, which may come from a launch, a controversy, or a brief
+media cycle. It does not establish technical progress, commercial demand, or
+the future direction of a field. A reviewer should record why a candidate is
+worth following. The dashboard should retain dismissed candidates and their
+reasons; otherwise a later evaluation would see only accepted examples and
+overstate quality.
+
+Platform coverage is another limit. Search indices, news feeds, and forum
+activity each reflect different populations and editorial choices. API
+restrictions, bot activity, language imbalance, and changing moderation can
+move counts without a corresponding change in public interest. Weekly
+normalization removes units but also obscures absolute scale. The radar should
+therefore display original aggregates and never present its score as a direct
+measure of public opinion. If live sources are added, collection must respect
+their terms and minimize personal data; retaining only aggregate counts and
+permitted source links reduces, but does not eliminate, privacy concerns.
+
+Finally, a language model can invent causal explanations for a rising
+cluster. Grounded snippets and mandatory human approval constrain that risk,
+but do not guarantee accuracy. A practical next iteration would compare
+summary drafts with source-verified human descriptions and log corrections.
+The score itself should be stress-tested under missing-source and sudden
+volume-spike scenarios before anyone uses it to prioritize coverage.
+Human review has a cost: inspecting snippets and correcting clusters takes
+time, and editors may apply inconsistent standards across weeks. A deployment
+study should record review time and agreement between editors alongside
+Precision@5. If one extra relevant candidate requires substantially more
+review effort, its practical value may be limited. This is another reason to
+expose intermediate evidence instead of only a ranking metric.
 
 \section{Conclusion}
-The radar demonstrates an inspectable way to combine activity, growth, and
-source diversity across platforms. The next step is to test the ranking on
-several months of real, legally accessible aggregate data with multiple
-independent annotators.
+This example develops an inspectable pipeline for identifying candidate AI
+trends across discussion, search, and news streams. Semantic grouping,
+normalized activity, growth, and source diversity yield a review list with
+traceable evidence. The illustrative top-five comparison and error inspection
+show how to evaluate such a system without treating a toy result as a live
+forecast. The next step is a time-separated study on legally accessible
+aggregate data with independent labels and measured processing costs.
 
 \printbibliography[heading=subbibliography,title={References}]
 \end{refsection}
 \end{document}
-
