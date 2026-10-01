@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-exec "$script_dir/../../scripts/build-paper.sh" "$script_dir"
+exec bash "$script_dir/../../scripts/build-paper.sh" "$script_dir"
 

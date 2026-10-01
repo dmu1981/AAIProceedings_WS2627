@@ -9,10 +9,10 @@ done
 mkdir -p .build
 rm -f proceedings.pdf
 if ! latexmk -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=.build main.tex; then
-  "$script_dir/../scripts/report-errors.sh" .build/main.log .build/main.blg
+  bash "$script_dir/../scripts/report-errors.sh" .build/main.log .build/main.blg
   exit 1
 fi
-"$script_dir/../scripts/check-log.sh" .build/main.log .build/main.blg
+bash "$script_dir/../scripts/check-log.sh" .build/main.log .build/main.blg
 cp .build/main.pdf proceedings.pdf
 printf 'Proceedings PDF: %s\n' "$script_dir/proceedings.pdf"
 
