@@ -30,4 +30,3 @@ jobs:
           name: paper-pdf
           path: papers/*/paper.pdf
           if-no-files-found: ignore
-

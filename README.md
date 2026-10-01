@@ -6,12 +6,49 @@ compiles the same LaTeX sources with a cover, preface, editor page, contents,
 continuous paper page numbers, an author appendix, and a common two-column
 paper design. It does not concatenate PDFs.
 
-**Students:** read [Student guide](#student-guide) from top to bottom once. It
-lists every step from `git clone` to the merged paper, including what you have
-to enter about yourselves (**authors, portraits, links**) and how to read the
-automatic checks.
+**Students:** first read [Public repository and your personal data](#public-repository-and-your-personal-data),
+then the [Student guide](#student-guide) from top to bottom once. It lists every
+step from `fork` to the merged paper, including what you have to enter about
+yourselves (**authors, portraits, links**) and how to read the automatic checks.
 
 **Editors:** see [Editors](#editors-build-the-volume-and-maintain-the-repository).
+
+---
+
+## Public repository and your personal data
+
+**This repository is public.** Everything you push to it, and everything in a
+pull request, can be read by anyone on the internet. This includes
+**the data about the authors in `metadata.tex`** (names, study programme,
+biography, links) and **portrait images** in your `authors/` folder.
+
+- **Your data is online before the proceedings are published.** It is visible
+  as soon as you push it to a branch or open a pull request, not only after
+  your paper has been merged or the volume has been printed. Even if you delete
+  it later, copies and the Git history may remain available. Do not rely on a
+  later removal.
+- **Providing personal data is voluntary.** You decide what to publish about
+  yourself. Nobody is required to use their real name, a real photo, or any
+  optional link.
+- **You may publish under a pseudonym.** Use a pseudonym (alias) instead of
+  your real name in `metadata.tex`, and, if you want, an **AI-generated or
+  drawn avatar** instead of a photo. Leave the portrait field empty to get the
+  neutral placeholder. Tell the editors beforehand if your real name is needed
+  for your grading or administration. Pseudonyms, avatars, and biographies must
+  follow the usual netiquette: no offensive, discriminatory, unlawful, or
+  third-party-rights-violating names, images, or texts, and no impersonation of
+  other people.
+- **Only publish data about yourself.** Never enter personal data or photos of
+  other people without their consent. Use only images you are allowed to publish.
+- **Use the same name consistently** in the paper and in your GitHub identity if
+  you want to stay unidentifiable: your Git commits contain the name and e-mail
+  address configured in Git. Set a pseudonym and your GitHub *noreply* address
+  (`git config user.name` / `git config user.email`, GitHub → Settings → Emails →
+  "Keep my email addresses private") **before your first commit**.
+
+By opening a pull request you confirm that you have read this section and that
+the information you submit is published voluntarily. Questions: ask the
+editors **before** you push.
 
 ---
 
@@ -20,7 +57,9 @@ automatic checks.
 ### At a glance
 
 1. Install the [tools](#local-prerequisites) (LaTeX, Biber, Poppler, Git Bash).
-2. Clone the repository and create a branch `paper/<team-name>`.
+2. **Fork** the repository on GitHub, clone **your fork**, and create a branch
+   `paper/<team-name>`. (You have no write access to the course repository's
+   `main`; changes reach it only through a pull request.)
 3. Copy `template/` to `papers/<team-name>/`.
 4. Fill in **`metadata.tex`**: title, abstract, keywords, **project repository
    URL** and **one `\AddAuthor` block per author** (name, programme, biography,
@@ -52,27 +91,36 @@ Look at it whenever you are unsure how something is written.
 
 ### 1. Get the repository and create your folder
 
-Replace `<repository-url>` with the course repository URL and `<team-name>`
-with a short, unique, lowercase name without spaces (for example `trend-radar`).
+1. On GitHub click **Fork** (top right of the course repository) to create your
+   own copy. Teams with several people create **one** fork and add the other
+   members as collaborators (fork → Settings → Collaborators).
+2. Replace `<your-fork-url>` with the URL of **your fork** and `<team-name>`
+   with a short, unique, lowercase name without spaces (for example
+   `trend-radar`):
 
 ```bash
-git clone <repository-url> advances-in-ai-proceedings
+git clone <your-fork-url> advances-in-ai-proceedings
 cd advances-in-ai-proceedings
+git config user.name  "Your Name or Pseudonym"
+git config user.email "your-github-noreply-address"
 git checkout -b paper/<team-name>
 cp -r template papers/<team-name>
 cd papers/<team-name>
 ./build.sh
 ```
 
-- **No write access to the course repository?** First click *Fork* on GitHub,
-  clone **your fork**, and later open the pull request from your fork into the
-  course repository's `main`. Everything else is identical, including the
-  automatic checks.
-- **Teams with several people:** one person creates the branch and pushes it;
-  the others run `git fetch` and `git checkout paper/<team-name>`. Always run
-  `git pull` before you start working and before you push, so you do not
-  overwrite each other's changes. Edit different files or sections where
-  possible.
+(Set the name and e-mail **before** the first commit, see
+[the data section](#public-repository-and-your-personal-data).)
+
+- **Pull request target:** later you open the pull request from your fork's
+  branch into the course repository's `main`. The automatic checks run there.
+- **Teams with several people:** all members work on the same branch of the
+  team's fork. Always run `git pull` before you start working and before you
+  push, so you do not overwrite each other's changes. Edit different files or
+  sections where possible.
+- **Keeping your fork current:** if the editors update the template or layout,
+  use the **Sync fork** button on GitHub and run `git pull` locally before
+  continuing.
 - The very first `./build.sh` is expected to **fail** with messages about
   template placeholders. That is the checklist for the next step.
 
@@ -98,7 +146,10 @@ small printed URL below the keywords. You do not need an image. Use a public or
 otherwise accessible repository that contains your project's source code, and
 check that readers can open it.
 
-**Authors.** Add **one `\AddAuthor` block per person**, in the order in which
+**Authors.** Everything in this block is **public** (see
+[Public repository and your personal data](#public-repository-and-your-personal-data)):
+you may use a pseudonym instead of your real name and an avatar instead of a
+photo, and every link is optional. Add **one `\AddAuthor` block per person**, in the order in which
 the names should appear on the paper and in the appendix. Copy the block from
 the template for further authors. Each block has seven arguments, one per line,
 all in curly braces. Leave unused optional arguments as `{}`:
@@ -121,9 +172,11 @@ Rules for the author information (all checked automatically):
 - **Portrait (optional):** place the file in your paper folder, e.g.
   `papers/<team-name>/authors/maria-beispiel.jpg`, and write the relative path
   `authors/maria-beispiel.jpg` as argument 4. Use a **square JPG or PNG** below
-  **500 KB** with a neutral, professional look. File names are
-  *case-sensitive* on GitHub. Without a portrait a neutral placeholder is
-  printed. The build never downloads images.
+  **500 KB** with a neutral, professional look. An **AI-generated or drawn
+  avatar** is fine instead of a photo (it must follow the netiquette and you
+  need the rights to use it). File names are *case-sensitive* on GitHub.
+  Without a portrait a neutral placeholder is printed. The build never
+  downloads images. Remember: the image is public as soon as you push it.
 - **Links (optional):** personal GitHub, LinkedIn, and website appear as small
   links below your biography. They are separate from the project repository.
 - Do not edit the author appendix itself. It is generated from `metadata.tex`
@@ -184,8 +237,11 @@ git commit -m "Add paper: Team Name"
 git push origin paper/<team-name>
 ```
 
-On GitHub, open the pull request from your branch into `main` and complete the
-checklist in the description. Change **only your own** `papers/<team-name>/`
+`origin` is your fork, so the branch lands there. On GitHub, open the pull
+request from your fork's branch into the course repository's `main` (GitHub
+shows a *Compare & pull request* button after the push) and complete the
+checklist in the description, including the confirmation about publishing your
+data. Change **only your own** `papers/<team-name>/`
 folder; the editorial team maintains the template, shared layout, scripts, and
 the order of papers. Do not commit generated PDFs (except PDF figures), `.build/`,
 or other LaTeX intermediate files — `.gitignore` already excludes them.
@@ -195,6 +251,12 @@ or other LaTeX intermediate files — `.gitignore` already excludes them.
 Every push to the pull request starts the check **Validate changed papers**
 (job `validate`). It builds your paper exactly like `./build.sh` and fails the
 pull request if anything is wrong. A green check is required before merging.
+
+> **First pull request:** GitHub does not run workflows of a first-time
+> contributor's pull request automatically. You may see *"Workflow awaiting
+> approval"*. This is normal; an editor has to click **Approve and run** once.
+> Afterwards every push is checked automatically. Run `./build.sh` locally
+> in the meantime, it performs the same checks.
 
 - Open the pull request, tab **Checks** (or the *Details* link next to the red
   ✗ at the bottom of the conversation). Failed checks show **annotations** with
@@ -297,10 +359,28 @@ shell page limit in their native formats. The default year is 2027.
   `papers/example-paper/`, which intentionally contain sample data. Remove the
   example paper from `proceedings/papers.tex` and `papers/` before publishing the
   real volume.
-- **Recommended repository settings** (Settings → Branches → branch protection
-  for `main`): *Require a pull request before merging*, *Require status checks
-  to pass* with the check **validate**, and *Require branches to be up to date*.
-  This enforces the green check for every paper.
+- **Feedback happens in the pull request:** the check runs when a student opens
+  a pull request and again on every further push to that branch. Students
+  should open the pull request early (a *draft* pull request is fine) to get
+  continuous feedback. Branches without a pull request are not validated.
+- **Recommended repository settings** (Settings → Rules → Rulesets → new branch
+  ruleset for `main`, or classic branch protection): *Require a pull request
+  before merging* (this blocks direct pushes to `main`), *Require status checks
+  to pass* with the check **validate**, *Require branches to be up to date*,
+  *Block force pushes*, and *Restrict deletions*. Keep the bypass list empty or
+  limited to the editors. The repository is **public**, so rulesets are
+  enforced on the free plan. Students work in **forks** and get no rights on
+  this repository at all; if you give anyone direct access, use at most the
+  **Write** role (never Maintain/Admin), otherwise they can change these rules.
+- **Workflow approval for forks:** under Settings → Actions → General →
+  *Fork pull request workflows from outside collaborators* the default is
+  "Require approval for first-time contributors". Keep it (safe) and approve
+  the first run per student, or relax it if you trust the course group.
+- **Privacy:** personal data in pull requests is public even before merging.
+  If a student asks for removal, close the pull request and ask them to
+  delete the branch in their fork; the data may remain in forks, caches and
+  the Git history of already-merged commits, so ask students to decide
+  **before** they push (see the data section above).
 - Newly submitted papers are validated standalone. Before the final volume,
   include them in `proceedings/papers.tex` and run `bash proceedings/build.sh`
   to see all papers together.
