@@ -1,0 +1,61 @@
+\documentclass[../../proceedings/main.tex]{subfiles}
+\begin{document}
+% Keep this file focused on your research. Layout is controlled in proceedings/main.tex.
+% The first two arguments (title, authors) are required; email may be empty.
+\begin{refsection}[\subfix{references.bib}]
+\PaperHeading
+  {Your paper title}
+  {First Author and Second Author}
+  {Your degree programme, Hochschule D\"usseldorf}
+  {first.author@example.edu}
+  {In about 100--150 words, state the problem, method, main result, and one limitation.}
+  {artificial intelligence, project, evaluation}
+
+\section{Introduction and Motivation}
+What problem does your project address, and why does it matter? Give context
+and cite prior work, for example \autocite{vaswani2017attention}.
+
+\section{Approach}
+Describe the data, model, pipeline, and evaluation so another team could
+reproduce the main idea. Figure~\ref{fig:pipeline} shows a simple workflow.
+\begin{figure}[t]
+  \centering
+  % Replace this placeholder with \includegraphics[width=\columnwidth]{\subfix{figures/my-figure.pdf}}
+  \fbox{\parbox{0.8\columnwidth}{\centering Data $\rightarrow$ Model $\rightarrow$ Evaluation}}
+  \caption{Example workflow. Put image files in this paper's figures/ directory.}
+  \label{fig:pipeline}
+\end{figure}
+
+\section{Design Decisions and Alternatives}
+Explain the choices you made, the alternatives you considered, and the tradeoffs.
+For example, Equation~\ref{eq:accuracy} defines an evaluation metric.
+\begin{equation}
+  \mathrm{accuracy}=\frac{\text{correct predictions}}{\text{all predictions}}.
+  \label{eq:accuracy}
+\end{equation}
+
+\section{Results}
+Report concrete observations, including units and the evaluation setting.
+Table~\ref{tab:results} demonstrates a compact comparison.
+\begin{table}[t]
+  \centering
+  \caption{Illustrative results; replace with measured values.}
+  \label{tab:results}
+  \begin{tabular}{lrr}\toprule
+    Method & Accuracy & Runtime (s) \\ \midrule
+    Baseline & 0.70 & 12 \\
+    Proposed & 0.78 & 18 \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Discussion and Limitations}
+Interpret the results and name validity threats, failure cases, and ethical
+or privacy constraints relevant to the project.
+
+\section{Conclusion}
+Summarize the contribution and one realistic next step.
+
+\printbibliography[heading=subbibliography,title={References}]
+\end{refsection}
+\end{document}
+

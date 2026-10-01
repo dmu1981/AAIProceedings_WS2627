@@ -1,0 +1,114 @@
+\documentclass[../../proceedings/main.tex]{subfiles}
+\begin{document}
+\begin{refsection}[\subfix{references.bib}]
+\PaperHeading
+  {Cross-Platform AI Trend Radar}
+  {Alex Rivera and Samira Becker}
+  {Faculty of Media, Hochschule D\"usseldorf}
+  {trend-radar@example.edu}
+  {AI research and product signals appear across papers, code repositories, and public discussion. We present a small cross-platform trend radar that collects these signals, normalizes topic labels, and ranks changes over time. A transparent score combines relative activity, recent growth, and source diversity. In an illustrative evaluation on a hand-labelled sample, the combined ranking surfaces more relevant emerging topics than a volume-only baseline. The prototype demonstrates a reproducible workflow and makes each score traceable to source counts. Its main limitations are small sample size, platform bias, and the instability of short observation windows.}
+  {trend detection, information retrieval, AI monitoring, evaluation}
+
+\section{Introduction and Motivation}
+New AI topics often emerge in several places at once: research papers describe
+methods, code repositories expose implementations, and community discussions
+reveal practical interest. A list sorted by raw mentions tends to reward already
+popular topics. Our project asks whether a small, explainable score can identify
+recent changes while retaining the origin of each signal. The pipeline is
+inspired by established work on attention mechanisms \autocite{vaswani2017attention}
+and information retrieval evaluation \autocite{manning2008ir}.
+
+\section{Approach}
+The prototype ingests weekly counts from three source categories: preprints,
+public repositories, and discussion posts. For this example, the counts are a
+small synthetic dataset; no live API or personal data is needed for the build.
+Topic aliases are mapped to one canonical label, then each platform's counts
+are normalized by its weekly total. Figure~\ref{fig:radar} shows the stages.
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{\subfix{figures/radar.pdf}}
+  \caption{The trend radar combines normalized signals from three platforms.}
+  \label{fig:radar}
+\end{figure}
+
+For topic $t$, let $g_t$ be normalized week-over-week growth, $a_t$ current
+relative activity, and $d_t$ the fraction of source categories with activity.
+The illustrative score in Equation~\ref{eq:score} is a weighted average:
+\begin{equation}
+  S_t = 0.45g_t + 0.35a_t + 0.20d_t.
+  \label{eq:score}
+\end{equation}
+Each term is scaled to $[0,1]$ before aggregation. We retain component values
+alongside the final rank to make changes inspectable.
+
+\section{Design Decisions and Alternatives}
+The three weights favor emerging activity while keeping a penalty for a topic
+seen on only one platform. An unweighted sum was simpler but made persistent,
+high-volume topics dominate. A learned ranker might adapt weights, yet our
+sample is too small for a credible training and test split. We therefore use
+fixed weights and report them explicitly. Deduplication uses canonical topic
+labels rather than embeddings, avoiding opaque merges at this stage.
+
+\section{Results}
+We manually marked ten candidate topics as relevant or irrelevant to the
+exercise. Table~\ref{tab:comparison} reports precision among the top five
+ranked topics. The combined score placed four relevant topics in the top five;
+the volume-only baseline placed three. These are illustrative observations,
+not a general claim about AI trend forecasting.
+\begin{table}[t]
+  \centering
+  \caption{Illustrative ranking on ten hand-labelled topics.}
+  \label{tab:comparison}
+  \begin{tabular}{lcc}\toprule
+    Ranking method & Relevant & Precision@5 \\ \midrule
+    Volume-only baseline & 3 & 0.60 \\
+    Combined score & 4 & 0.80 \\ \bottomrule
+  \end{tabular}
+\end{table}
+The small difference suggests that growth and source diversity are useful
+features in this toy setting. A real deployment would require a larger,
+time-separated evaluation.
+
+We also inspected the score components rather than only the final order. One
+candidate had high activity on repositories but almost no preprint or
+discussion signal. Its diversity term was low, so it ranked below a topic
+with moderate activity across all three sources. This behavior is intentional:
+the radar seeks broad change, not the busiest individual platform. Another
+candidate had a large growth ratio because its earlier count was close to
+zero. We capped the normalized growth term at one, preventing a single small
+denominator from overwhelming the ranking. These inspection cases help check
+whether the score behaves as specified, but they do not establish predictive
+validity.
+
+The hand labels were created after the candidate set was assembled. That
+procedure can favor topics that are easy to recognize in retrospect. A stronger
+study would select evaluation weeks in advance, hide future counts from the
+annotators, and compute precision at several cutoffs. It would also record
+inter-annotator agreement and compare against a recent-growth baseline. We
+report only Precision@5 here because the ten-topic exercise is too small for
+stable conclusions about recall or long-term forecasting.
+
+\section{Discussion and Limitations}
+Platform coverage determines what the radar can see. Missing APIs, changing
+moderation practices, and language imbalance can shift counts independently of
+actual research interest. Weekly growth is especially noisy for rare topics.
+Human review is therefore needed before using a rank as evidence of a durable
+trend. Source counts should be aggregated and published without user-level data.
+The evaluation here measures ranking relevance, not downstream decision quality.
+The normalization also discards absolute scale: a small platform with a sharp
+relative increase can influence the score as much as a larger platform. This
+may be desirable for early detection, but it can amplify noise. In practice,
+we would expose both normalized and raw counts, apply a minimum-count
+threshold, and let a reviewer inspect source links before acting on a rank.
+Those checks would preserve the project's emphasis on traceability.
+
+\section{Conclusion}
+The radar demonstrates an inspectable way to combine activity, growth, and
+source diversity across platforms. The next step is to test the ranking on
+several months of real, legally accessible aggregate data with multiple
+independent annotators.
+
+\printbibliography[heading=subbibliography,title={References}]
+\end{refsection}
+\end{document}
+

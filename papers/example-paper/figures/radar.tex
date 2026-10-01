@@ -1,0 +1,21 @@
+% Editable source for radar.pdf. Build with: pdflatex radar.tex
+\documentclass[tikz,border=5pt]{standalone}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\begin{document}
+\begin{tikzpicture}[font=\sffamily\footnotesize,>=stealth]
+  \definecolor{ink}{HTML}{173A56}
+  \definecolor{pale}{HTML}{E9F0F4}
+  \tikzset{box/.style={draw=ink,rounded corners=2pt,fill=pale,minimum width=2.15cm,minimum height=0.8cm,align=center}}
+  \node[box] (papers) at (0,2) {Preprints};
+  \node[box] (code) at (0,1) {Repositories};
+  \node[box] (talk) at (0,0) {Discussions};
+  \node[box] (norm) at (3.1,1) {Normalize\\weekly counts};
+  \node[box] (rank) at (6.2,1) {Score and\\rank topics};
+  \draw[->,thick,ink] (papers.east) -- (norm.west);
+  \draw[->,thick,ink] (code.east) -- (norm.west);
+  \draw[->,thick,ink] (talk.east) -- (norm.west);
+  \draw[->,thick,ink] (norm.east) -- (rank.west);
+\end{tikzpicture}
+\end{document}
+

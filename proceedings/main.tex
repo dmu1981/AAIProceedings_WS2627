@@ -1,0 +1,106 @@
+\documentclass[a4paper,10pt]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[a4paper,top=22mm,bottom=23mm,left=19mm,right=19mm,headheight=14pt]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{csquotes}
+\usepackage{subfiles}
+\usepackage{etoolbox}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage[backend=biber,style=ieee,sorting=none,refsection=none]{biblatex}
+
+\input{../config/edition.tex}
+\definecolor{AAIblue}{HTML}{173A56}
+\hypersetup{colorlinks=true,linkcolor=AAIblue,citecolor=AAIblue,urlcolor=AAIblue,pdfauthor={Hochschule Duesseldorf},pdftitle={Advances in Artificial Intelligence Student Proceedings}}
+\setlength{\columnsep}{7mm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlength{\emergencystretch}{1em}
+\titleformat{\section}{\large\bfseries\color{AAIblue}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.0ex}{0.35ex}
+\titlespacing*{\subsection}{0pt}{0.8ex}{0.2ex}
+\fancyhf{}
+\fancyhead[L]{\small\CourseTitle}
+\fancyhead[R]{\small\ProceedingsTitle\ \ProceedingsYear}
+\fancyfoot[C]{\small Page \thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\pagestyle{fancy}
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyhead[L]{\small\CourseTitle}%
+  \fancyhead[R]{\small\ProceedingsTitle\ \ProceedingsYear}%
+  \fancyfoot[C]{\small Page \thepage}%
+  \renewcommand{\headrulewidth}{0.3pt}%
+}
+
+% Section/float numbers restart in each paper, while hyperlink anchors stay unique.
+\newcounter{paper}
+\renewcommand{\theHsection}{\arabic{paper}.\arabic{section}}
+\renewcommand{\theHfigure}{\arabic{paper}.\arabic{figure}}
+\renewcommand{\theHtable}{\arabic{paper}.\arabic{table}}
+\renewcommand{\theHequation}{\arabic{paper}.\arabic{equation}}
+
+% Paper metadata is passed as arguments so each subfile remains self-contained.
+% #1 title, #2 authors, #3 institution/programme, #4 email (optional),
+% #5 abstract, #6 keywords. An empty title or author list is a hard error.
+\newcommand{\PaperHeading}[6]{%
+  \ifstrempty{#1}{\PackageError{aai-proceedings}{Missing paper title}{Set the first argument of \string\PaperHeading.}}{}%
+  \ifstrempty{#2}{\PackageError{aai-proceedings}{Missing paper authors}{Set the second argument of \string\PaperHeading.}}{}%
+  \stepcounter{paper}%
+  \setcounter{section}{0}%
+  \setcounter{figure}{0}%
+  \setcounter{table}{0}%
+  \setcounter{equation}{0}%
+  \twocolumn[{%
+    \begin{center}
+      {\LARGE\bfseries\color{AAIblue}#1\par}\vspace{5pt}
+      {\normalsize #2\par}\vspace{2pt}
+      {\small #3\par}
+      \ifstrempty{#4}{}{\small\href{mailto:#4}{#4}\par}
+    \end{center}
+    \vspace{4pt}
+    \begin{minipage}{0.96\textwidth}\small
+      \textbf{Abstract.} #5\par\vspace{4pt}
+      \textbf{Keywords:} #6
+    \end{minipage}\vspace{13pt}
+  }]%
+  \phantomsection
+  \addcontentsline{toc}{section}{#1}%
+}
+
+\begin{document}
+\pagenumbering{gobble}
+\begin{titlepage}
+  \thispagestyle{empty}
+  \centering
+  \vspace*{0.20\textheight}
+  {\large\color{AAIblue}\ProceedingsEvent\par}\vspace{22mm}
+  {\Huge\bfseries\CourseTitle\par}\vspace{9mm}
+  {\LARGE\ProceedingsTitle\par}\vspace{25mm}
+  {\Large\ProceedingsInstitution\par}\vspace{3mm}
+  {\large\ProceedingsFaculty\par}\vfill
+  {\large Academic Year \ProceedingsYear\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\section*{Preface}
+\phantomsection
+\addcontentsline{toc}{section}{Preface}
+\input{preface.tex}
+\clearpage
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+\input{papers.tex}
+\end{document}
+
