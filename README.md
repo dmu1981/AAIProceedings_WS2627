@@ -311,8 +311,8 @@ The scripts require Bash, `latexmk`, `pdflatex`, `biber`, and `pdfinfo`
 (Poppler). The TeX installation must include standard packages used by
 `proceedings/main.tex`, notably `subfiles`, `biblatex`, `biblatex-ieee`,
 `geometry`, `fancyhdr`, `titlesec`, `microtype`, `booktabs`, `lmodern`,
-`qrcode`, `tikz`, and `xstring` (the cover uses TikZ and the Helvetica clone
-from `psnfss`). No network access is needed while compiling. CI installs the
+`qrcode`, `tikz`, and `xstring` (the cover uses TikZ and the TeX Gyre Heros font
+from `tex-gyre`). No network access is needed while compiling. CI installs the
 corresponding TeX Live packages on Ubuntu.
 
 ### Ubuntu / Debian
@@ -320,7 +320,7 @@ corresponding TeX Live packages on Ubuntu.
 ```bash
 sudo apt-get update
 sudo apt-get install latexmk biber poppler-utils texlive-latex-recommended \
-  texlive-latex-extra texlive-pictures texlive-fonts-recommended texlive-bibtex-extra
+  texlive-latex-extra texlive-pictures texlive-fonts-recommended texlive-bibtex-extra lmodern tex-gyre
 ```
 
 `texlive-pictures` supplies the QR-code package and TikZ for the cover and the
