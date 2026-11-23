@@ -1,0 +1,18 @@
+% GameDepth -- metadata for the standalone paper, the QR code and the author appendix.
+\ResetPaperMetadata
+\PaperTitle{GameDepth: What Does a Small Depth Network Learn from Game Data?}
+\PaperInstitution{B.Sc. Data Science, AI and Intelligent Systems, Hochschule D\"usseldorf}
+\PaperEmail{}
+\PaperAbstract{Renderers provide exact depth for free, but a depth network trained on rendered images may also learn regularities that only hold in the virtual world. We train a compact U-Net (14.4\,M parameters) only on rendered people (RHD) and GTA~V street scenes and test whether it can tell a hand in front of the body from a hand behind it, on 2{,}728 rendered images and 41 webcam photos of the author. On the rendered images it estimates the depth of persons more accurately than Depth Anything~V2~Small under identical alignment (AbsRel 0.114 vs.\ 0.132), recognises every hand in front of the body in real photos and needs 5.8\,ms per image on a laptop GPU. It also carries over shortcuts: it favours ``hand in front'', treats everything except the person as far away and misses most hands held behind the body at hip height. The results rest on few training runs and one person in one room.}
+\PaperKeywords{monocular depth estimation, synthetic data, sim-to-real transfer, shortcut learning, real-time demo}
+
+\ProjectRepository{https://github.com/Tymauricee/gamedepth}
+
+\AddAuthor
+  {Maurice Tay}
+  {B.Sc. Data Science, AI and Intelligent Systems}
+  {Maurice Tay is a fifth-semester student of Data Science, AI and Intelligent Systems at Hochschule D\"usseldorf with a focus on digital health. In this single-author project he trained a compact depth network on rendered data, designed the hand-in-front-of-body evaluation and the webcam test, and built the live demo for the KI-CON 2027. His academic interests are computer vision, machine learning on health and image data, and data visualisation.}
+  {}
+  {https://github.com/Tymauricee}
+  {}
+  {}

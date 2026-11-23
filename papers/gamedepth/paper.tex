@@ -1,0 +1,266 @@
+\documentclass[../../proceedings/main.tex]{subfiles}
+\begin{document}
+\begin{refsection}[\subfix{references.bib}]
+\input{\subfix{metadata.tex}}
+\PaperHeading
+
+\section{Introduction \& Motivation}
+Estimating depth from a single camera image is useful wherever a depth sensor
+is too expensive or too large, for example in small robots, driver assistance
+or augmented reality. Training such a network requires a depth value for
+every pixel, which is costly to measure in real scenes. Game engines and
+renderers, in contrast, store the exact distance of every pixel in their depth
+buffer, so synthetic images come with perfect labels for free. The catch is
+that a network may learn more than depth: it can also learn regularities that
+only hold in its virtual training world, so-called shortcuts
+\autocite{gamedepth-geirhos2020}, and these may fail on real images.
+
+This project asks: \emph{What does a small convolutional network learn about
+depth from game data alone, and which shortcuts of the virtual world does it
+carry over to real webcam images?} The question is made concrete by the live
+demo at the KI-CON: a visitor holds a hand in front of the body, and the depth
+map should show the hand closer than the torso. Telling a hand in front of the
+body from a hand behind it is a small, checkable task that average error
+metrics hardly capture. Beyond the demo, the answer matters to everyone who
+trains models on synthetic data for cheap hardware, for instance for
+low-cost robots or assistive devices, because a shortcut that goes unnoticed
+in the virtual test set can fail silently in use.
+
+The contribution is threefold: (i) a compact U-Net trained only on rendered
+data that runs in real time on a laptop; (ii) an evaluation beyond average
+errors, with a hand-order test, a flat baseline, a height test and a fair
+comparison with Depth Anything~V2; and (iii) a webcam test with an unambiguous
+protocol and paired statistics that shows which shortcuts transfer to real
+images. The goal is not to beat large foundation models but to understand a
+small, cheap one.
+
+\section{State of the Art}
+Eigen et al.\ trained the first convolutional network for single-image depth
+and introduced a scale-invariant loss, because absolute scale is ambiguous in
+a single image \autocite{gamedepth-eigen2014}. Encoder--decoder networks with
+skip connections such as the U-Net \autocite{gamedepth-ronneberger2015} and
+ImageNet-pretrained encoders such as ResNet \autocite{gamedepth-he2016} have
+since become standard building blocks.
+
+Current models generalise by scale. MiDaS mixes many datasets and evaluates
+with an affine alignment of inverse depth \autocite{gamedepth-ranftl2022}.
+Depth Anything~V2 trains a teacher on 595{,}000 synthetic images and students
+on more than 62~million pseudo-labelled real images; its smallest version
+still has 24.8\,M parameters \autocite{gamedepth-yang2024}. Depth Pro predicts
+sharp metric depth \autocite{gamedepth-bochkovskii2025}, and Depth Pro~2,
+published in November~2026, extends this to temporally consistent video with
+models from 24\,M to 872\,M parameters \autocite{gamedepth-hu2026}. These
+models transfer well, but they need data and compute far beyond a student
+project.
+
+Games have been used as a source of ground truth before
+\autocite{gamedepth-richter2016}; MVS-Synth provides depth from GTA~V
+\autocite{gamedepth-huang2018} and RHD renders people with hands close to the
+camera in Blender \autocite{gamedepth-zimmermann2017}. Van Dijk and de Croon
+showed that depth networks rely on the vertical image position of objects,
+since in driving scenes ``lower in the image'' usually means ``closer''
+\autocite{gamedepth-vandijk2019}. Little is known about what a small network
+trained \emph{only} on such data learns for a close-range task like the hand
+in front of the body, and whether its shortcuts survive on real images. This
+is the gap addressed here.
+
+\section{Method}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{\subfix{figures/gamedepth-pipeline.pdf}}
+  \caption{Overview: training only on rendered data, evaluation on rendered
+  and real images, and the live demo.}
+  \label{fig:gamedepth-pipeline}
+\end{figure}
+Figure~\ref{fig:gamedepth-pipeline} summarises the approach.
+\textbf{Data.} The main dataset is RHD \autocite{gamedepth-zimmermann2017}:
+41{,}258 training and 2{,}728 test images ($320\times320$) of rendered people
+with depth and masks for body and hand. It was chosen because, unlike GTA,
+it shows hands close to the camera, which is the demo situation. A data check
+showed two properties that matter later: the background is a flat photograph
+at a constant 5\,m and covers more than half of all pixels, and the hand is in
+front of the body in 88.6\,\% of the test images (base rate). As a contrast we
+use 11{,}000 GTA~V street scenes from MVS-Synth \autocite{gamedepth-huang2018};
+their depth is given in game units, and values of 1000 and more are treated
+as invalid (9.5\,\% of pixels).
+
+\textbf{Network.} A U-Net \autocite{gamedepth-ronneberger2015} with an
+ImageNet-pretrained ResNet-18 encoder \autocite{gamedepth-he2016}; each
+decoder stage upsamples bilinearly, concatenates the skip features and applies
+two $3\times3$ convolutions with batch normalisation and ReLU. The output is
+log depth; the network has 14.4\,M parameters. We chose a convolutional
+encoder over a vision transformer as used by Depth Anything because it is
+small, fast at low resolution and works well with pretrained weights.
+
+\textbf{Loss and training.} With $d_i=\log\hat y_i-\log y_i$ over the $n$
+valid pixels, we minimise the scale-invariant loss \autocite{gamedepth-eigen2014}
+\begin{equation}
+  L_{\mathrm{si}}=\sqrt{\tfrac{1}{n}\textstyle\sum_i d_i^2-\lambda\big(\tfrac{1}{n}\sum_i d_i\big)^2},\quad \lambda=0.85,
+  \label{eq:gamedepth-loss}
+\end{equation}
+plus 0.5 times an L1 term on the horizontal and vertical differences of $d$ at
+three scales, which keeps edges sharp. Scale invariance suits the demo, where
+only the order of distances matters, and lets us mix metres (RHD) with game
+units (GTA). Training uses random $256\times256$ crops, horizontal flips and
+colour augmentation (brightness, contrast, saturation, colour cast, blur,
+noise), AdamW with a one-cycle schedule (peak learning rate $3\cdot10^{-4}$),
+batch size 32, 15 epochs and mixed precision on a Colab L4 GPU (61\,min for
+RHD). We trained an RHD network, a GTA network and a mixture of 70\,\% RHD and
+30\,\% GTA drawn by a weighted sampler. We report the last epoch, since picking
+the best epoch would select on the test set.
+
+\textbf{Evaluation on rendered data.} On the 2{,}728 RHD test images
+(centre crops) we measure AbsRel and $\delta_1$ \emph{on the person only},
+after the same affine alignment in inverse depth for every model (MiDaS
+protocol, clamped at 5\,m), because the Depth Anything~V2 model used here
+predicts relative inverse depth. A flat prediction with one depth everywhere serves as baseline.
+The \emph{hand test} compares the median predicted depth in the hand mask with
+that in the body mask. Because a model that always answers ``hand in front''
+already reaches the base rate of 88.6\,\%, we report the balanced accuracy,
+the mean of the hit rates for ``in front'' and ``behind''; guessing gives 0.5.
+The \emph{height test} splits images by whether the hand is lower in the image
+than the body and measures how much the share of ``in front'' answers changes
+with the true order (influence of truth) versus with the image height
+(influence of height).
+
+\textbf{Webcam test.} A recording tool takes webcam photos and lets the user
+draw boxes around hand and torso and label the order; it deliberately hides
+the depth map so that poses are not chosen in favour of a model. A model's
+answer compares the median predicted nearness in the central 60\,\% of both
+boxes. A pilot with 32 photos showed that ``hand behind the head'' was
+ambiguous. In the final session (41 photos) the person stood 40--50\,cm in
+front of a wall: ``behind'' means the hand lies flat on the wall with the arm
+stretched, next to the head or the hip; ``in front'' means 30--40\,cm in
+front of the chest at head or belly height. We give 95\,\% bootstrap intervals (2{,}000 resamples) and
+compare models on the same photos with an exact McNemar test
+\autocite{gamedepth-mcnemar1947}.
+
+\section{Results \& Evaluation}
+\textbf{Rendered test set.} Table~\ref{tab:gamedepth-rhd} shows that the RHD
+network estimates the depth of persons best, 35\,\% below the flat baseline
+and below Depth Anything~V2~Small. In ordering the hand it is weaker than
+Depth Anything (balanced accuracy 0.83 vs.\ 0.90): it detects 95\,\% of hands
+in front but only 71\,\% of hands behind, whereas Depth Anything reaches 81\,\%
+and 98\,\%. The GTA network is at chance level, and its answers depend more on
+image height (influence 0.28) than on the true order (0.07), as predicted by
+van Dijk and de Croon \autocite{gamedepth-vandijk2019}. Figure~\ref{fig:gamedepth-rhd}
+illustrates this: it renders the raised hand darker, that is, farther away.
+The mixed network does not take over this shortcut on rendered data, and its
+depth error stays within the run-to-run variation; two runs with identical settings
+differed by 0.025 in whole-image AbsRel. ImageNet pretraining is the clearest
+design effect (whole-image AbsRel 0.13--0.16 with vs.\ 0.23--0.24 without);
+augmentation only shows a tendency.
+
+\begin{table}[t]
+  \centering
+  \caption{Rendered RHD test set (2{,}728 images). AbsRel and $\delta_1$ on
+  the person after identical affine alignment; BA = balanced accuracy of the
+  hand test; height = influence of image height.}
+  \label{tab:gamedepth-rhd}
+  \small\setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lcccc}\toprule
+    Model & AbsRel$\downarrow$ & $\delta_1\uparrow$ & BA$\uparrow$ & height \\ \midrule
+    Flat baseline      & 0.176 & 0.751 & 0.50 & 0.00 \\
+    GTA net            & 0.164 & 0.783 & 0.51 & 0.28 \\
+    Mix 70/30          & 0.119 & 0.891 & 0.80 & $-0.10$ \\
+    RHD net            & \textbf{0.114} & \textbf{0.903} & 0.83 & $-0.07$ \\
+    Depth Anything V2-S & 0.132 & 0.877 & \textbf{0.90} & $-0.01$ \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{\subfix{figures/gamedepth-rhd-examples.pdf}}
+  \caption{Rendered test images; bright means near. The RHD net follows the
+  ground truth, the GTA net renders the raised hand dark (far).}
+  \label{fig:gamedepth-rhd}
+\end{figure}
+
+\textbf{Real webcam photos.} Table~\ref{tab:gamedepth-webcam} reports the
+final session. Depth Anything is correct on all 41 photos, which confirms that
+the labels are unambiguous; in the pilot it had recognised only 5 of 15 hands
+behind the body. Our networks recognise every hand in front of the body. The
+RHD network also finds 17 of 25 hands behind it, so it does not simply answer
+``in front'', which would yield 0 of 25. Its errors concentrate on one pose:
+the hand behind the body at hip height. The paired comparison confirms that
+Depth Anything is better on this test (8\,:\,0 discordant photos against the
+RHD net, $p=0.008$; 11\,:\,0 against the mix, $p=0.001$), whereas the
+difference between the RHD and the mixed network is not significant
+(5\,:\,2, $p=0.45$). On real photos the height influence rises to 0.31 for the
+RHD and 0.42 for the mixed network, although it was close to zero on rendered
+data.
+
+\begin{table}[t]
+  \centering
+  \caption{Webcam photos, final session: correctly ordered photos per pose
+  (high/low: hand box centre above/below the torso box) and balanced accuracy
+  (BA) with 95\,\% bootstrap interval.}
+  \label{tab:gamedepth-webcam}
+  \small
+  \begin{tabular}{lccc}\toprule
+    Hand & RHD & Mix & DA~V2-S \\ \midrule
+    in front, high & 8/8 & 8/8 & 8/8 \\
+    in front, low  & 8/8 & 8/8 & 8/8 \\
+    behind, high   & 12/12 & 12/12 & 12/12 \\
+    behind, low    & 5/13 & 2/13 & 13/13 \\ \midrule
+    BA             & 0.84 & 0.78 & 1.00 \\
+    95\,\% interval & {\scriptsize 0.74--0.93} & {\scriptsize 0.68--0.88} & {\scriptsize 1.00--1.00} \\ \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{\subfix{figures/gamedepth-webcam-failure.pdf}}
+  \caption{Typical failure (cropped below the face): the hand lies flat on
+  the wall behind the person. Depth Anything shows it as far away as the wall,
+  both own networks as near as the hip.}
+  \label{fig:gamedepth-fail}
+\end{figure}
+
+\textbf{Speed.} On a laptop with an RTX~4050 the RHD network needs 5.8\,ms per
+image at $320\times256$ (32-bit), Depth Anything~V2~Small 27.5\,ms at
+$518\times518$ (22.1\,ms in 16-bit); on the CPU the times are 103 and 628\,ms.
+The built-in webcam itself delivers at most about 20 frames per second,
+which limits the live demo.
+
+\section{Discussion \& Limitations}
+The results support the research question in two directions. The network
+learned real depth cues: it estimates the depth of persons well and transfers
+the main demo case, a hand in front of the body, to real photos without error. It
+also learned three shortcuts of its rendered world. First, the base rate makes
+it favour ``hand in front''. Second, because the RHD background is always
+5\,m away, it treats everything except the person as far; real rooms appear
+uniformly dark. Third, Figure~\ref{fig:gamedepth-fail} suggests that it
+assigns the hand the depth of the body part at the same height: next to the
+hip, which is closer to the low webcam than the chest, the hand looks ``in
+front''. This third explanation is a hypothesis; a counter-test would train
+with images flipped upside down at random, which removes the height cue. The shortcuts
+appeared only partly on rendered data, so a real test set was essential.
+
+Compared with Depth Anything~V2~Small, the network trades reliability for
+efficiency: it uses about 1{,}500 times fewer training images, 1.7 times fewer
+parameters, and is 4.7 times faster on the GPU (3.8 times against 16-bit
+Depth Anything) and 6 times on the CPU. Part of the speed gain comes from the
+smaller input. Whether it runs on smaller devices was not tested.
+
+The evidence is limited: one person, one room and one camera, so effects of
+skin tone, clothing or lighting are untested; boxes instead of pixel masks; 41 photos with wide intervals; one or two training runs per
+variant; and only three mixing ratios (0, 30, 100\,\% GTA). Training data with
+structured backgrounds and hands far behind the body, more participants and a
+comparison with newer models such as Depth Pro~2 are concrete next steps.
+The webcam photos show only the author and are not part of the public
+repository.
+
+\section{Conclusion}
+A 14.4\,M-parameter U-Net trained only on rendered data estimates the depth of
+persons well, runs in real time and handles the hand in front of the body on
+real webcam photos. A targeted test shows, however, that it also learned the
+base rate, the flat background and probably a height cue of its virtual world,
+which Depth Anything~V2 avoids in our tests. A next step is the flip
+counter-test to confirm the height explanation. \emph{Use of AI tools:} code
+and text drafts were written with the help of an AI assistant (Claude,
+Anthropic); the author ran and checked all experiments and results.
+
+\printbibliography[heading=subbibliography,title={References}]
+\end{refsection}
+\end{document}
